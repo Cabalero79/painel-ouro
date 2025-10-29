@@ -43,11 +43,14 @@ export function genMockCandles(points = 120, startPrice = 2350): Candle[] {
     const low = Math.min(open, close) - Math.random() * 2.5
     price = close
 
-    out.push({
-      time: (Math.floor(t.getTime() / 1000) as unknown) as UTCTimestamp,
-      open, high, low, close,
-    })
-  }
+   out.push({
+  time: Math.floor(t.getTime() / 1000) as UTCTimestamp,
+  open,
+  high,
+  low,
+  close,
+})
+
   return out
 }
 
