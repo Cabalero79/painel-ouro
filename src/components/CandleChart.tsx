@@ -1,6 +1,12 @@
-
 import React, { useEffect, useRef } from 'react'
-import { createChart, ColorType, ISeriesApi } from 'lightweight-charts'
+import {
+  createChart,
+  ColorType,
+  ISeriesApi,
+  CandlestickData,
+  Time,
+  UTCTimestamp,
+} from 'lightweight-charts'
 import type { Candle } from '../services/data'
 
 export default function CandleChart({ data, height = 300 }: { data: Candle[]; height?: number }) {
@@ -24,6 +30,7 @@ export default function CandleChart({ data, height = 300 }: { data: Candle[]; he
     })
     chartRef.current = chart
     seriesRef.current = series
+
     const handleResize = () => chart.applyOptions({ width: containerRef.current?.clientWidth || 600 })
     handleResize(); window.addEventListener('resize', handleResize)
     return () => { window.removeEventListener('resize', handleResize); chart.remove(); chartRef.current = null; seriesRef.current = null }
@@ -31,7 +38,15 @@ export default function CandleChart({ data, height = 300 }: { data: Candle[]; he
 
   useEffect(() => {
     if (!seriesRef.current) return
-    seriesRef.current.setData(data)
+    // Converte nosso Candle para o formato do lightweight-charts
+    const chartData: CandlestickData<Time>[] = data.map(c => ({
+      time: c.time as UTCTimestamp,
+      open: c.open,
+      high: c.high,
+      low: c.low,
+      close: c.close,
+    }))
+    seriesRef.current.setData(chartData)
     chartRef.current?.timeScale().fitContent()
   }, [data])
 
