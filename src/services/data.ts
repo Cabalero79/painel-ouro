@@ -1,4 +1,3 @@
-import { toUnix } from '../utils/indicators'
 import type { UTCTimestamp } from 'lightweight-charts'
 
 export type Candle = {
@@ -16,15 +15,14 @@ export type NewsItem = {
   score: number
 }
 
-// Vocabulário simples para sentimento (mock)
 const POSITIVE = ['otimista','alta','subida','cresce','recorde','acima','fluxo comprador']
 const NEGATIVE = ['queda','baixa','crise','alerta','abaixo','despenca','fluxo vendedor']
 
 export function simpleSentiment(text: string): number {
   const t = text.toLowerCase()
   let score = 0
-  POSITIVE.forEach(w => { if (t.includes(w)) score += 1 })
-  NEGATIVE.forEach(w => { if (t.includes(w)) score -= 1 })
+  for (const w of POSITIVE) if (t.includes(w)) score += 1
+  for (const w of NEGATIVE) if (t.includes(w)) score -= 1
   return score
 }
 
@@ -43,14 +41,14 @@ export function genMockCandles(points = 120, startPrice = 2350): Candle[] {
     const low = Math.min(open, close) - Math.random() * 2.5
     price = close
 
-   out.push({
-  time: Math.floor(t.getTime() / 1000) as UTCTimestamp,
-  open,
-  high,
-  low,
-  close,
-})
-
+    out.push({
+      time: Math.floor(t.getTime() / 1000) as UTCTimestamp,
+      open,
+      high,
+      low,
+      close,
+    })
+  }
   return out
 }
 
@@ -75,3 +73,48 @@ export function aggregate(candles: Candle[], minutes = 5): Candle[] {
   if (bucket.length) {
     const o = bucket[0].open
     const h = Math.max(...bucket.map(b => b.high))
+    const l = Math.min(...bucket.map(b => b.low))
+    const cl = bucket[bucket.length - 1].close
+    out.push({ time: bucket[0].time, open: o, high: h, low: l, close: cl })
+  }
+
+  return out
+}
+
+/** Toggle entre mock e live */
+export const DATA_SOURCE: 'mock' | 'live' = 'mock'
+
+/** Placeholder de “live”. Troque pelos seus endpoints ao usar DATA_SOURCE='live'. */
+export async function fetchLiveCandles(
+  symbol: string,
+  points: number,
+  intervalMin: number
+): Promise<Candle[]> {
+  // Exemplo real:
+  // const r = await fetch(`/api/candles?symbol=${symbol}&points=${points}&interval=${intervalMin}`)
+  // return await r.json()
+  return genMockCandles(points, 2350 + Math.random() * 20)
+}
+
+export async function fetchNews(symbol: string): Promise<NewsItem[]> {
+  return [
+    {
+      title: `Ouro (${symbol}): fluxo comprador aumenta após dados de inflação`,
+      url: '#',
+      publishedAt: new Date().toISOString(),
+      score: simpleSentiment('otimista cresce fluxo comprador acima'),
+    },
+    {
+      title: `Ouro (${symbol}): dólar forte pressiona metais; realização de lucros`,
+      url: '#',
+      publishedAt: new Date(Date.now() - 2 * 3600_000).toISOString(),
+      score: simpleSentiment('queda fluxo vendedor alerta'),
+    },
+    {
+      title: `Ouro (${symbol}): demanda física na Ásia sustenta preços no curto prazo`,
+      url: '#',
+      publishedAt: new Date(Date.now() - 22 * 3600_000).toISOString(),
+      score: simpleSentiment('alta acima'),
+    },
+  ]
+}
